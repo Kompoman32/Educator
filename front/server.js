@@ -20,10 +20,7 @@ if (typeof apiRoot === 'undefined') {
 // Set path to static files
 app.use(express.static(__dirname + '/'));
 
-// Proxy middleware options
-var apiProxy = proxy({
-  target: apiRoot
-});
+cargo install
 
 app.use('/api', apiProxy);
 
