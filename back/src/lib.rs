@@ -20,13 +20,17 @@ extern crate serde_derive;
 /// API
 pub mod api;
 /// Pipe type struct
-pub mod user;
+pub mod classes;
 /// PB structures
 pub mod proto;
 /// Schema
 pub mod schema;
 /// Transactions
 pub mod transactions;
+/// HardCode DB
+pub mod hardStorage;
+/// SmartContract Db
+pub mod smartContract;
 
 use exonum_merkledb::Snapshot;
 

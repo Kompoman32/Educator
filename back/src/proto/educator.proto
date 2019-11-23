@@ -10,12 +10,6 @@ message User {
     exonum.PublicKey key = 1;
 }
 
-//
-message Add_User {
-    // 
-    exonum.PublicKey key = 1;
-}
-
 // 
 message Class {
     // 
@@ -26,22 +20,6 @@ message Class {
 
 // 
 message Task {
-    // 
-    exonum.PublicKey student_key = 1;
-    // 
-    string task_name = 2;
-}
-
-// 
-message Add_Class {
-    // 
-    exonum.PublicKey student_key = 1;
-    // 
-    string class_name = 2;
-}
-
-// 
-message Add_Task {
     // 
     exonum.PublicKey student_key = 1;
     // 

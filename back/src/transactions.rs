@@ -7,6 +7,8 @@ use exonum::{
 };
 
 use super::{proto, schema::Schema, SERVICE_ID};
+use crate::hardStorage::*;
+use crate::smartContract::can_get_cert;
 
 /// Error codes emitted by pipes transactions during execution.
 #[derive(Debug, Fail)]
@@ -50,54 +52,162 @@ impl From<Error> for ExecutionError {
     }
 }
 
+
+
 /// Create participant.
 #[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
-#[exonum(pb = "proto::Add_User")]
-pub struct Add_User {
+#[exonum(pb = "proto::User")]
+pub struct User {
     /// `PublicKey` of participant.
     pub key: PublicKey
 }
 
 ///
 #[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
-#[exonum(pb = "proto::Add_Class")]
-pub struct Add_Class {
+#[exonum(pb = "proto::Class")]
+pub struct Class {
     ///
     pub student_key: PublicKey,
     ///
     pub class_name: String
 }
 
-// /// Buy a phone.
-// #[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
-// #[exonum(pb = "proto::Buy")]
-// pub struct Buy {
-//     /// `PublicKey` of participant.
-//     pub key: PublicKey,
-// }
+///
+#[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
+#[exonum(pb = "proto::Task")]
+pub struct Task {
+    ///
+    pub student_key: PublicKey,
+    ///
+    pub task_name: String
+}
 
-// /// Remove from queue.
-// #[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
-// #[exonum(pb = "proto::Remove")]
-// pub struct Remove {
-//     /// `PublicKey` of participant.
-//     pub key: PublicKey,
-// }
+/// Create participant.
+#[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
+#[exonum(pb = "proto::Cert")]
+pub struct Cert {
+    /// `PublicKey` of participant.
+    pub student_key: PublicKey,
+    /// 
+    pub course_name: String,
+}
+
+
+
+
 
 /// Transaction group.
 #[derive(Serialize, Deserialize, Clone, Debug, TransactionSet)]
 pub enum UserTransactions {
     /// Add tx.
-    AddUser(Add_User),
+    AddUser(User),
     ///
-    AddClass(Add_Class),
-    // /// Buy tx.
-    // Buy(Buy),
-    // /// Remove tx.
-    // Remove(Remove)
+    AddClass(Class),
+    ///
+    AddTask(Task),
+    ///
+    GetCert(Cert),
 }
 
-impl Add_User {
+impl Transaction for User {
+    fn execute(&self, context: TransactionContext) -> ExecutionResult {
+        let mut schema = Schema::new(context.fork());
+
+        let key = &self.key;
+        let author = context.author();
+
+        if can_add_user(&author) {
+            return Err(Error::ParticipantAlreadyExists)?
+        }
+
+        if schema.user(key).is_none() {
+            schema.add_user(key);
+
+            Ok(())
+        } else {
+            Err(Error::ParticipantAlreadyExists)?
+        }
+    }
+}
+
+impl Transaction for Class {
+    fn execute(&self, context: TransactionContext) -> ExecutionResult {
+        let mut schema = Schema::new(context.fork());
+
+        let key = &self.student_key;
+        let class_name = self.class_name.chars().collect();
+        let author = context.author();
+
+        if can_add_class(&author) {
+            return Err(Error::ParticipantAlreadyExists)?
+        }
+
+        if schema.user(key).is_none() {
+            Err(Error::ParticipantAlreadyExists)?
+        } else {
+            if schema.class(key, &class_name).is_none(){
+                Err(Error::ParticipantAlreadyExists)?
+            } else {
+                schema.add_class(key, &class_name);
+                Ok(())
+            }
+        }
+    }
+}
+
+impl Transaction for Task {
+    fn execute(&self, context: TransactionContext) -> ExecutionResult {
+        let mut schema = Schema::new(context.fork());
+
+        let key = &self.student_key;
+        let task_name = self.task_name.chars().collect();
+        let author = context.author();
+
+        if can_add_task(&author) {
+            return Err(Error::ParticipantAlreadyExists)?
+        }
+
+        if schema.user(key).is_none() {
+            Err(Error::ParticipantAlreadyExists)?
+        } else {
+            if schema.task(key, &task_name).is_none(){
+                Err(Error::ParticipantAlreadyExists)?
+            } else {
+                schema.add_task(key, &task_name);
+                Ok(())
+            }
+        }
+    }
+}
+
+impl Transaction for Cert {
+    fn execute(&self, context: TransactionContext) -> ExecutionResult {
+        let mut schema = Schema::new(context.fork());
+
+        let key = &self.student_key;
+        let course_name = self.course_name.chars().collect();
+        let author = context.author();
+
+        if can_add_cert(&author) {
+            return Err(Error::ParticipantAlreadyExists)?
+        }
+
+        if schema.user(key).is_none() {
+            Err(Error::ParticipantAlreadyExists)?
+        } else {
+            if can_get_cert(key, &course_name) {
+                schema.add_cert(key, &course_name);
+                Ok(())
+            } else {
+                Err(Error::ParticipantAlreadyExists)?
+            }
+        }
+    }
+}
+
+/// FOR TESTS
+
+impl User {
     #[doc(hidden)]
     pub fn sign(
         &key: &PublicKey,
@@ -108,7 +218,7 @@ impl Add_User {
     }
 }
 
-impl Add_Class {
+impl Class {
     #[doc(hidden)]
     pub fn sign(
         &student_key: &PublicKey,
@@ -120,106 +230,26 @@ impl Add_Class {
     }
 }
 
-// impl Buy {
-//     #[doc(hidden)]
-//     pub fn sign(
-//         pk: &PublicKey,
-//         &key: &PublicKey,
-//         sk: &SecretKey,
-//     ) -> Signed<RawTransaction> {
-//         Message::sign_transaction(Self { key }, SERVICE_ID, *pk, sk)
-//     }
-// }
-
-// impl Remove {
-//     #[doc(hidden)]
-//     pub fn sign(
-//         pk: &PublicKey,
-//         &key: &PublicKey,
-//         sk: &SecretKey,
-//     ) -> Signed<RawTransaction> {
-//         Message::sign_transaction(Self { key }, SERVICE_ID, *pk, sk)
-//     }
-// }
-
-impl Transaction for Add_User {
-    fn execute(&self, context: TransactionContext) -> ExecutionResult {
-        let hash = context.tx_hash();
-
-        let mut schema = Schema::new(context.fork());
-
-        let key = &self.key;
-
-        if schema.user(key).is_none() {
-            schema.add_user(key);
-
-            Ok(())
-        } else {
-            Err(Error::ParticipantAlreadyExists)?
-        }
+impl Task {
+    #[doc(hidden)]
+    pub fn sign(
+        &student_key: &PublicKey,
+        task_name: String,
+        pk: &PublicKey,
+        sk: &SecretKey,
+    ) -> Signed<RawTransaction> {
+        Message::sign_transaction(Self { student_key, task_name }, SERVICE_ID, *pk, sk)
     }
 }
 
-impl Transaction for Add_Class {
-    fn execute(&self, context: TransactionContext) -> ExecutionResult {
-        let hash = context.tx_hash();
-
-        let mut schema = Schema::new(context.fork());
-
-        let key = &self.student_key;
-
-        // TODO
-
-        if schema.user(key).is_none() {
-            schema.add_user(key);
-
-            Ok(())
-        } else {
-            Err(Error::ParticipantAlreadyExists)?
-        }
+impl Cert {
+    #[doc(hidden)]
+    pub fn sign(
+        &student_key: &PublicKey,
+        course_name: String,
+        pk: &PublicKey,
+        sk: &SecretKey,
+    ) -> Signed<RawTransaction> {
+        Message::sign_transaction(Self { student_key, course_name }, SERVICE_ID, *pk, sk)
     }
 }
-
-// impl Transaction for Buy {
-//     fn execute(&self, context: TransactionContext) -> ExecutionResult {
-//         let hash = context.tx_hash();
-//         let mut schema = Schema::new(context.fork());
-//         let key = &self.key;
-
-//         if let Some(participant) = schema.participant(key) {
-//             if participant.have_bought {
-//                 Err(Error::ParticipantAlreadyBought)?
-//             }
-            
-//             let first = schema.first_participant().unwrap();
-//             if !first.key.eq(&participant.key) {
-//                 Err(Error::ParticipantIsNotFirst)?
-//             }
-
-//             schema.participant_have_bought(participant, &hash);
-//             Ok(())
-//         } else {
-//             Err(Error::ParticipantNotFound)?
-//         }
-//     }
-// }
-
-// impl Transaction for Remove {
-//     fn execute(&self, context: TransactionContext) -> ExecutionResult {
-//         let hash = context.tx_hash();
-//         let mut schema = Schema::new(context.fork());
-//         let key = &self.key;
-
-//         if let Some(participant) = schema.participant(key) {
-
-//             if participant.removed {
-//                 Err(Error::ParticipantAlreadyRemoved)?
-//             }
-
-//             schema.remove_participant(participant, &hash);
-//             Ok(())
-//         } else {
-//             Err(Error::ParticipantNotFound)?
-//         }
-//     }
-// }

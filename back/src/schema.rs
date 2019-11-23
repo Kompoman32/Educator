@@ -1,13 +1,16 @@
 //! Educator database schema.
-use crate::user::User;
+use crate::classes::*;
 use exonum::crypto::{Hash, PublicKey};
-use exonum_merkledb::{IndexAccess, ObjectHash, ProofListIndex, ProofMapIndex};
-use std::cmp::Ordering;
+use exonum_merkledb::{IndexAccess, ObjectHash, ProofMapIndex};
 
-/// user table name
+/// User table name
 pub const USER_TABLE: &str = "educator.user";
-/// Pipe type history table name
-pub const USER_HISTORY_TABLE: &str = "educator.user.history";
+/// Class table name
+pub const CLASS_TABLE: &str = "educator.class";
+/// Task table name
+pub const TASK_TABLE: &str = "educator.task";
+/// Cert table name
+pub const CERT_TABLE: &str = "educator.cert";
 
 /// Database schema.
 #[derive(Debug)]
@@ -35,41 +38,10 @@ where
         ProofMapIndex::new(USER_TABLE, self.view.clone())
     }
 
-    /// Returns history of the user with the given public key.
-    // pub fn user_history(&self, public_key: &PublicKey) -> ProofListIndex<T, Hash> {
-    //     ProofListIndex::new_in_family(USER_HISTORY_TABLE, public_key, self.view.clone())
-    // }
-
     /// Returns user for the given public key.
     pub fn user(&self, pub_key: &PublicKey) -> Option<User> {
         self.users().get(pub_key)
     }
-
-    /// Returns the state hash of service.
-    pub fn state_hash(&self) -> Vec<Hash> {
-        vec![self.users().object_hash()]
-    }
-
-    // fn order_decs(&self, d1: &User, d2: &User) -> Ordering
-    // {
-    //     let sort_by_timestamp = d2.timestamp.cmp(&d1.timestamp);
-    //     // if sort_by_timestamp != Ordering::Equal
-    //     // {
-    //     //     return sort_by_timestamp;
-    //     // }
-    //     sort_by_timestamp
-    // }
-
-    /// Returns first user.
-    // pub fn first_user(&self) -> Option<User> {
-    //     let users = self.users();
-    //     let p = users.iter()
-    //         .map(|x| x.1)
-    //         .filter(|x| !x.have_bought && !x.removed)
-    //         .max_by(|x, y| self.order_decs(x, y))
-    //         .unwrap();
-    //    Some(p)
-    // }
 
     /// Create new user and append first record to its history.
     pub fn add_user(
@@ -84,33 +56,103 @@ where
         self.users().put(key, created_user);
     }
 
-    // /// User have bought a phone
-    // pub fn user_have_bought(
-    //     &mut self,
-    //     user: User,
-    //     transaction: &Hash
-    // ) {
-    //     let user = {
-    //         let mut history = self.user_history(&user.key);
-    //         history.push(*transaction);
-    //         let history_hash = history.object_hash();
-    //         user.buy(&history_hash)
-    //     };
-    //     self.users().put(&user.key, user.clone());
-    // }
+    /// Returns the state hash of service.
+    pub fn state_hash(&self) -> Vec<Hash> {
+        vec![self.users().object_hash(), self.classes().object_hash()]
+    }
 
-    // /// Remove a user.
-    // pub fn remove_user(
-    //     &mut self,
-    //     user: User,
-    //     transaction: &Hash
-    // ) {
-    //     let user = {
-    //         let mut history = self.user_history(&user.key);
-    //         history.push(*transaction);
-    //         let history_hash = history.object_hash();
-    //         user.remove(&history_hash)
-    //     };
-    //     self.users().put(&user.key, user.clone());
-    // }
+
+
+
+    ///
+    fn convert_to_class_key(&self, key: &PublicKey, class_name: &String) -> String {
+        key.to_string() + &class_name.clone()
+    }
+
+    /// Returns `ProofMapIndex` with users.
+    pub fn classes(&self) -> ProofMapIndex<T, String, Class> {
+        ProofMapIndex::new(CLASS_TABLE, self.view.clone())
+    }
+
+    /// Returns user for the given public key.
+    pub fn class(&self, key: &PublicKey, class_name: &String) -> Option<Class> {
+        self.classes().get(&self.convert_to_class_key(key, class_name))
+    }
+
+    /// Create new user and append first record to its history.
+    pub fn add_class(
+        &mut self,
+        student_key: &PublicKey,
+        class_name: &String,
+    ) {
+        let created_class = {
+            Class::new(
+                student_key,
+                class_name.clone()
+            )
+        };
+        self.classes().put(&self.convert_to_class_key(student_key, class_name), created_class);
+    }
+
+
+
+    ///
+    fn convert_to_task_key(&self, key: &PublicKey, task_name: &String) -> String {
+        key.to_string() + &task_name.clone()
+    }
+
+    /// Returns `ProofMapIndex` with users.
+    pub fn taskes(&self) -> ProofMapIndex<T, String, Task> {
+        ProofMapIndex::new(TASK_TABLE, self.view.clone())
+    }
+
+    /// Returns user for the given public key.
+    pub fn task(&self, key: &PublicKey, task_name: &String) -> Option<Task> {
+        self.taskes().get(&self.convert_to_task_key(key, task_name))
+    }
+
+    /// Create new user and append first record to its history.
+    pub fn add_task(
+        &mut self,
+        student_key: &PublicKey,
+        task_name: &String,
+    ) {
+        let created_task = {
+            Task::new(
+                student_key,
+                task_name.clone()
+            )
+        };
+        self.taskes().put(&self.convert_to_task_key(student_key, task_name), created_task);
+    }
+
+    ///
+    fn convert_to_cert_key(&self, key: &PublicKey, course_name: &String) -> String {
+        key.to_string() + &course_name.clone()
+    }
+
+    /// Returns `ProofMapIndex` with users.
+    pub fn certes(&self) -> ProofMapIndex<T, String, Cert> {
+        ProofMapIndex::new(CERT_TABLE, self.view.clone())
+    }
+
+    /// Returns user for the given public key.
+    pub fn cert(&self, key: &PublicKey, course_name: &String) -> Option<Cert> {
+        self.certes().get(&self.convert_to_cert_key(key, course_name))
+    }
+
+    /// Create new user and append first record to its history.
+    pub fn add_cert(
+        &mut self,
+        student_key: &PublicKey,
+        course_name: &String,
+    ) {
+        let created_cert = {
+            Cert::new(
+                student_key,
+                course_name.clone()
+            )
+        };
+        self.certes().put(&self.convert_to_cert_key(student_key, course_name), created_cert);
+    }
 }

@@ -8,7 +8,7 @@ use exonum::{
 use exonum_merkledb::{ListProof, MapProof};
 
 use super::{schema::Schema, SERVICE_ID};
-use crate::user::User;
+use crate::classes::*;
 
 /// Get first user key
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -135,18 +135,10 @@ impl PublicApi {
 
         let answer = match user {
             None => false,
-            Some(i) => true,
+            Some(_i) => true,
         };
 
         Ok(answer)
-    }
-
-    fn add(state: &ServiceApiState, query: UserQuery,) -> api::Result<bool> {
-        let snapshot = state.snapshot();
-        let mut schema = Schema::new(&snapshot);
-        schema.add_user(&query.pub_key);
-
-        Ok(true)
     }
 
     fn get_cert(state: &ServiceApiState, query: CertQuery,) -> api::Result<bool> {
@@ -168,7 +160,6 @@ impl PublicApi {
             // v1/educator/user_exist?pub_key={id}
             .endpoint("v1/educator/user_exist", Self::user_exist)
             // v1/educator/user_exist?pub_key={id}&course_name={name}
-            .endpoint("v1/educator/get_certs", Self::get_cert)
-            .endpoint("v1/educator/add", Self::add);
+            .endpoint("v1/educator/get_certs", Self::get_cert);
     }
 }
