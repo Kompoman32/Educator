@@ -8,9 +8,6 @@ import "helpers.proto";
 message User {
     // 
     exonum.PublicKey key = 1;
-
-    //
-    string login = 2;
 }
 
 //

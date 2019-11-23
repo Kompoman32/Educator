@@ -111,11 +111,12 @@ impl Add_User {
 impl Add_Class {
     #[doc(hidden)]
     pub fn sign(
-        &key: &PublicKey,
+        &student_key: &PublicKey,
+        class_name: String,
         pk: &PublicKey,
         sk: &SecretKey,
     ) -> Signed<RawTransaction> {
-        Message::sign_transaction(Add_User { key }, SERVICE_ID, *pk, sk)
+        Message::sign_transaction(Self { student_key, class_name }, SERVICE_ID, *pk, sk)
     }
 }
 
@@ -166,6 +167,8 @@ impl Transaction for Add_Class {
         let mut schema = Schema::new(context.fork());
 
         let key = &self.student_key;
+
+        // TODO
 
         if schema.user(key).is_none() {
             schema.add_user(key);

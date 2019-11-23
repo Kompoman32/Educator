@@ -141,6 +141,14 @@ impl PublicApi {
         Ok(answer)
     }
 
+    fn add(state: &ServiceApiState, query: UserQuery,) -> api::Result<bool> {
+        let snapshot = state.snapshot();
+        let mut schema = Schema::new(&snapshot);
+        schema.add_user(&query.pub_key);
+
+        Ok(true)
+    }
+
     fn get_cert(state: &ServiceApiState, query: CertQuery,) -> api::Result<bool> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
@@ -160,6 +168,7 @@ impl PublicApi {
             // v1/educator/user_exist?pub_key={id}
             .endpoint("v1/educator/user_exist", Self::user_exist)
             // v1/educator/user_exist?pub_key={id}&course_name={name}
-            .endpoint("v1/educator/get_certs", Self::get_cert);
+            .endpoint("v1/educator/get_certs", Self::get_cert)
+            .endpoint("v1/educator/add", Self::add);
     }
 }
