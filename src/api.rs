@@ -8,46 +8,67 @@ use exonum::{
 use exonum_merkledb::{ListProof, MapProof};
 
 use super::{schema::Schema, SERVICE_ID};
-use crate::participant::Participant;
+use crate::user::User;
 
-/// Get first participant key
+/// Get first user key
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct GetFirstQuery {}
 
-/// Describes the query parameters for the `get_participant` endpoint.
+/// Describes the query parameters for the `get_user` endpoint.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub struct ParticipantQuery {
-    /// Public key of the queried participant.
+pub struct UserQuery {
+    /// Public key of the queried user.
     pub pub_key: PublicKey,
 }
 
-/// Proof of existence for specific participant.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ParticipantProof {
-    /// Proof of the whole database table.
-    pub to_table: MapProof<Hash, Hash>,
-    /// Proof of the specific participant in this table.
-    pub to_participant: MapProof<PublicKey, Participant>,
+/// Describes the query parameters for the `get_cert` endpoint.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct CertQuery {
+    /// Public key of the queried user.
+    pub pub_key: PublicKey,
+
+    /// Public key of the queried user.
+    pub course_name: String,
 }
 
-/// Participant history.
+/// Proof of existence for specific user.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ParticipantHistory {
+pub struct UserProof {
+    /// Proof of the whole database table.
+    pub to_table: MapProof<Hash, Hash>,
+    /// Proof of the specific user in this table.
+    pub to_user: MapProof<PublicKey, User>,
+}
+
+/// User history.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserHistory {
     /// Proof of the list of transaction hashes.
     pub proof: ListProof<Hash>,
     /// List of above transactions.
     pub transactions: Vec<TransactionMessage>,
 }
 
-/// Participant information.
+/// User information.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ParticipantInfo {
+pub struct UserInfo {
     /// Proof of the last block.
     pub block_proof: BlockProof,
-    /// Proof of the appropriate participant.
-    pub participant_proof: ParticipantProof,
-    /// History of the appropriate participant.
-    pub participant_history: Option<ParticipantHistory>,
+    /// Proof of the appropriate user.
+    pub user_proof: UserProof,
+    /// History of the appropriate user.
+    pub user_history: Option<UserHistory>,
+}
+
+/// User information.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CertInfo {
+    /// Proof of the last block.
+    pub block_proof: BlockProof,
+    /// Proof of the appropriate user.
+    pub user_proof: UserProof,
+    /// History of the appropriate user.
+    pub user_history: Option<UserHistory>,
 }
 
 /// Public service API description.
@@ -55,71 +76,90 @@ pub struct ParticipantInfo {
 pub struct PublicApi;
 
 impl PublicApi {
-    /// Endpoint for getting a single participant.
-    fn participant_info(
-        state: &ServiceApiState,
-        query: ParticipantQuery,
-    ) -> api::Result<ParticipantInfo> {
-        let snapshot = state.snapshot();
-        let general_schema = blockchain::Schema::new(&snapshot);
-        let currency_schema = Schema::new(&snapshot);
+    /// Endpoint for getting a single user.
+    // fn user_info(
+    //     state: &ServiceApiState,
+    //     query: UserQuery,
+    // ) -> api::Result<UserInfo> {
+    //     let snapshot = state.snapshot();
+    //     let general_schema = blockchain::Schema::new(&snapshot);
+    //     let currency_schema = Schema::new(&snapshot);
 
-        let max_height = general_schema.block_hashes_by_height().len() - 1;
+    //     let max_height = general_schema.block_hashes_by_height().len() - 1;
 
-        let block_proof = general_schema
-            .block_and_precommits(Height(max_height))
-            .unwrap();
+    //     let block_proof = general_schema
+    //         .block_and_precommits(Height(max_height))
+    //         .unwrap();
 
-        let to_table: MapProof<Hash, Hash> =
-            general_schema.get_proof_to_service_table(SERVICE_ID, 0);
+    //     let to_table: MapProof<Hash, Hash> =
+    //         general_schema.get_proof_to_service_table(SERVICE_ID, 0);
 
-        let to_participant: MapProof<PublicKey, Participant> =
-            currency_schema.participants().get_proof(query.pub_key);
+    //     let to_user: MapProof<PublicKey, User> =
+    //         currency_schema.users().get_proof(query.pub_key);
 
-        let participant_proof = ParticipantProof {
-            to_table,
-            to_participant,
-        };
+    //     let user_proof = UserProof {
+    //         to_table,
+    //         to_user,
+    //     };
 
-        let participant = currency_schema.participant(&query.pub_key);
+    //     let user = currency_schema.user(&query.pub_key);
 
-        let explorer = BlockchainExplorer::new(state.blockchain());
+    //     let explorer = BlockchainExplorer::new(state.blockchain());
 
-        let participant_history = participant.map(|_| {
-            let history = currency_schema.participant_history(&query.pub_key);
-            let proof = history.get_range_proof(0..history.len());
+    //     let user_history = user.map(|_| {
+    //         let history = currency_schema.user_history(&query.pub_key);
+    //         let proof = history.get_range_proof(0..history.len());
 
-            let transactions = history
-                .iter()
-                .map(|record| explorer.transaction_without_proof(&record).unwrap())
-                .collect::<Vec<_>>();
+    //         let transactions = history
+    //             .iter()
+    //             .map(|record| explorer.transaction_without_proof(&record).unwrap())
+    //             .collect::<Vec<_>>();
 
-            ParticipantHistory {
-                proof,
-                transactions,
-            }
-        });
+    //         UserHistory {
+    //             proof,
+    //             transactions,
+    //         }
+    //     });
 
-        Ok(ParticipantInfo {
-            block_proof,
-            participant_proof,
-            participant_history,
-        })
-    }
+    //     Ok(UserInfo {
+    //         block_proof,
+    //         user_proof,
+    //         user_history,
+    //     })
+    // }
 
-    fn get_first(state: &ServiceApiState, _: GetFirstQuery) -> api::Result<String> {
+    fn user_exist(state: &ServiceApiState, query: UserQuery,) -> api::Result<bool> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
-        let first = schema.first_participant().unwrap();
+        let user = schema.user(&query.pub_key);
 
-        Ok(first.key.to_hex())
+        let answer = match user {
+            None => false,
+            Some(i) => true,
+        };
+
+        Ok(answer)
+    }
+
+    fn get_cert(state: &ServiceApiState, query: CertQuery,) -> api::Result<bool> {
+        let snapshot = state.snapshot();
+        let schema = Schema::new(&snapshot);
+
+        let &pub_key = &query.pub_key;
+        let &course_name = &query.course_name;
+
+        // TODO LOGIC
+
+        Ok(answer)
     }
 
     /// Wires the above endpoint to public scope of the given `ServiceApiBuilder`.
     pub fn wire(builder: &mut ServiceApiBuilder) {
         builder
             .public_scope()
-            .endpoint("v1/iphone_queue/info", Self::participant_info)
-            .endpoint("v1/iphone_queue/get_first", Self::get_first);
+            // v1/educator/user_exist?pub_key={id}
+            .endpoint("v1/educator/user_exist", Self::user_exist)
+            // v1/educator/user_exist?pub_key={id}&course_name={name}
+            .endpoint("v1/educator/get_certs", Self::get_cert);
     }
 }

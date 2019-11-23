@@ -1,13 +1,13 @@
 //! Iphone queue database schema.
-use crate::participant::Participant;
+use crate::user::User;
 use exonum::crypto::{Hash, PublicKey};
 use exonum_merkledb::{IndexAccess, ObjectHash, ProofListIndex, ProofMapIndex};
 use std::cmp::Ordering;
 
-/// Pipe types table name
-pub const PARTICIPANT_TYPES_TABLE: &str = "iphone_queue.participant";
+/// user table name
+pub const USER_TABLE: &str = "educator.user";
 /// Pipe type history table name
-pub const PARTICIPANT_HISTORY_TABLE: &str = "iphone_queue.participant.history";
+pub const USER_HISTORY_TABLE: &str = "educator.user.history";
 
 /// Database schema.
 #[derive(Debug)]
@@ -30,100 +30,87 @@ where
         Schema { view }
     }
 
-    /// Returns `ProofMapIndex` with participants.
-    pub fn participants(&self) -> ProofMapIndex<T, PublicKey, Participant> {
-        ProofMapIndex::new(PARTICIPANT_TYPES_TABLE, self.view.clone())
+    /// Returns `ProofMapIndex` with users.
+    pub fn users(&self) -> ProofMapIndex<T, PublicKey, User> {
+        ProofMapIndex::new(USER_TABLE, self.view.clone())
     }
 
-    /// Returns history of the participant with the given public key.
-    pub fn participant_history(&self, public_key: &PublicKey) -> ProofListIndex<T, Hash> {
-        ProofListIndex::new_in_family(PARTICIPANT_HISTORY_TABLE, public_key, self.view.clone())
-    }
+    /// Returns history of the user with the given public key.
+    // pub fn user_history(&self, public_key: &PublicKey) -> ProofListIndex<T, Hash> {
+    //     ProofListIndex::new_in_family(USER_HISTORY_TABLE, public_key, self.view.clone())
+    // }
 
-    /// Returns participant for the given public key.
-    pub fn participant(&self, pub_key: &PublicKey) -> Option<Participant> {
-        self.participants().get(pub_key)
+    /// Returns user for the given public key.
+    pub fn user(&self, pub_key: &PublicKey) -> Option<User> {
+        self.users().get(pub_key)
     }
 
     /// Returns the state hash of service.
     pub fn state_hash(&self) -> Vec<Hash> {
-        vec![self.participants().object_hash()]
+        vec![self.users().object_hash()]
     }
 
-    fn order_decs(&self, d1: &Participant, d2: &Participant) -> Ordering
-    {
-        let sort_by_timestamp = d2.timestamp.cmp(&d1.timestamp);
-        // if sort_by_timestamp != Ordering::Equal
-        // {
-        //     return sort_by_timestamp;
-        // }
-        sort_by_timestamp
-    }
+    // fn order_decs(&self, d1: &User, d2: &User) -> Ordering
+    // {
+    //     let sort_by_timestamp = d2.timestamp.cmp(&d1.timestamp);
+    //     // if sort_by_timestamp != Ordering::Equal
+    //     // {
+    //     //     return sort_by_timestamp;
+    //     // }
+    //     sort_by_timestamp
+    // }
 
-    /// Returns first participant.
-    pub fn first_participant(&self) -> Option<Participant> {
-        let participants = self.participants();
-        let p = participants.iter()
-            .map(|x| x.1)
-            .filter(|x| !x.have_bought && !x.removed)
-            .max_by(|x, y| self.order_decs(x, y))
-            .unwrap();
-       Some(p)
-    }
+    /// Returns first user.
+    // pub fn first_user(&self) -> Option<User> {
+    //     let users = self.users();
+    //     let p = users.iter()
+    //         .map(|x| x.1)
+    //         .filter(|x| !x.have_bought && !x.removed)
+    //         .max_by(|x, y| self.order_decs(x, y))
+    //         .unwrap();
+    //    Some(p)
+    // }
 
-    /// Create new participant and append first record to its history.
-    pub fn add_participant(
+    /// Create new user and append first record to its history.
+    pub fn add_user(
         &mut self,
         key: &PublicKey,
-        timestamp: u64,
-        have_bought: bool,
-        removed: bool,
-        transaction: &Hash,
     ) {
-        let created_participant = {
-            let mut history = self.participant_history(key);
-            history.push(*transaction);
-            let history_hash = history.object_hash();
-
-            Participant::new(
+        let created_user = {
+            User::new(
                 key,
-                timestamp,
-                have_bought,
-                removed,
-                history.len(),
-                &history_hash,
             )
         };
-        self.participants().put(key, created_participant);
+        self.users().put(key, created_user);
     }
 
-    /// Participant have bought a phone
-    pub fn participant_have_bought(
-        &mut self,
-        participant: Participant,
-        transaction: &Hash
-    ) {
-        let participant = {
-            let mut history = self.participant_history(&participant.key);
-            history.push(*transaction);
-            let history_hash = history.object_hash();
-            participant.buy(&history_hash)
-        };
-        self.participants().put(&participant.key, participant.clone());
-    }
+    // /// User have bought a phone
+    // pub fn user_have_bought(
+    //     &mut self,
+    //     user: User,
+    //     transaction: &Hash
+    // ) {
+    //     let user = {
+    //         let mut history = self.user_history(&user.key);
+    //         history.push(*transaction);
+    //         let history_hash = history.object_hash();
+    //         user.buy(&history_hash)
+    //     };
+    //     self.users().put(&user.key, user.clone());
+    // }
 
-    /// Remove a participant.
-    pub fn remove_participant(
-        &mut self,
-        participant: Participant,
-        transaction: &Hash
-    ) {
-        let participant = {
-            let mut history = self.participant_history(&participant.key);
-            history.push(*transaction);
-            let history_hash = history.object_hash();
-            participant.remove(&history_hash)
-        };
-        self.participants().put(&participant.key, participant.clone());
-    }
+    // /// Remove a user.
+    // pub fn remove_user(
+    //     &mut self,
+    //     user: User,
+    //     transaction: &Hash
+    // ) {
+    //     let user = {
+    //         let mut history = self.user_history(&user.key);
+    //         history.push(*transaction);
+    //         let history_hash = history.object_hash();
+    //         user.remove(&history_hash)
+    //     };
+    //     self.users().put(&user.key, user.clone());
+    // }
 }

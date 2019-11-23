@@ -1,7 +1,7 @@
 [package]
-name = "iphone_queue"
-version = "0.1.0"
-authors = ["blockchain dev"]
+name = "educator"
+version = "0.0.1"
+authors = ["Lipin Slava", "Aleksandr Kustov"]
 edition = "2018"
 
 [dependencies]

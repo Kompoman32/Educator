@@ -9,7 +9,7 @@ use exonum::{
 use exonum_testkit::{ApiKind, TestKit, TestKitApi, TestKitBuilder};
 
 // Import data types used in tests from the crate where the service is defined.
-use iphone_queue::{
+use educator::{
     api::{ParticipantInfo, GetFirstQuery, ParticipantQuery},
     participant::Participant,
     transactions::{ Add, Buy, Remove},
@@ -156,9 +156,9 @@ impl ParticipantsApi {
     fn get_participant(&self, pub_key: PublicKey) -> Option<Participant> {
         let participant_info = self
             .inner
-            .public(ApiKind::Service("iphone_queue"))
+            .public(ApiKind::Service("educator"))
             .query(&ParticipantQuery { pub_key })
-            .get::<ParticipantInfo>("v1/iphone_queue/info")
+            .get::<ParticipantInfo>("v1/educator/info")
             .unwrap();
 
         let to_participant = participant_info
@@ -176,9 +176,9 @@ impl ParticipantsApi {
     fn get_first_key(&self) -> Option<String> {
         let first_key = self
             .inner
-            .public(ApiKind::Service("iphone_queue"))
+            .public(ApiKind::Service("educator"))
             .query(&GetFirstQuery {})
-            .get::<String>("v1/iphone_queue/get_first")
+            .get::<String>("v1/educator/get_first")
             .unwrap();
             
         println!("{:?}", first_key);

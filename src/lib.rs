@@ -20,7 +20,7 @@ extern crate protobuf;
 /// API
 pub mod api;
 /// Pipe type struct
-pub mod participant;
+pub mod user;
 /// PB structures
 pub mod proto;
 /// Schema
@@ -44,7 +44,7 @@ use transactions::ParticipantTransactions;
 /// Unique service id
 pub const SERVICE_ID: u16 = 10;
 /// Name of the service.
-const SERVICE_NAME: &str = "iphone_queue";
+const SERVICE_NAME: &str = "educator";
 
 /// Exonum `Service` implementation.
 #[derive(Default, Debug)]
