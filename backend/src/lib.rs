@@ -1,4 +1,4 @@
-//! Iphone queue
+//! Educator
 
 #![deny(
     missing_debug_implementations,
@@ -7,15 +7,15 @@
     bare_trait_objects
 )]
 
-extern crate exonum;
+//extern crate exonum;
 #[macro_use]
 extern crate exonum_derive;
 #[macro_use]
 extern crate failure;
-extern crate serde;
+//extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate protobuf;
+//extern crate protobuf;
 
 /// API
 pub mod api;
@@ -39,7 +39,7 @@ use exonum::{
 };
 
 use schema::Schema;
-use transactions::ParticipantTransactions;
+use transactions::UserTransactions;
 
 /// Unique service id
 pub const SERVICE_ID: u16 = 10;
@@ -65,7 +65,7 @@ impl blockchain::Service for Service {
     }
 
     fn tx_from_raw(&self, raw: RawTransaction) -> Result<Box<dyn Transaction>, failure::Error> {
-        ParticipantTransactions::tx_from_raw(raw).map(Into::into)
+        UserTransactions::tx_from_raw(raw).map(Into::into)
     }
 
     fn wire_api(&self, builder: &mut ServiceApiBuilder) {

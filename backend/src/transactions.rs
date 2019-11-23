@@ -52,76 +52,97 @@ impl From<Error> for ExecutionError {
 
 /// Create participant.
 #[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
-#[exonum(pb = "proto::Add")]
-pub struct Add {
+#[exonum(pb = "proto::Add_User")]
+pub struct Add_User {
     /// `PublicKey` of participant.
-    pub key: PublicKey,
-    /// timestamp
-    pub timestamp: u64,
+    pub key: PublicKey
 }
 
-/// Buy a phone.
+///
 #[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
-#[exonum(pb = "proto::Buy")]
-pub struct Buy {
-    /// `PublicKey` of participant.
-    pub key: PublicKey,
+#[exonum(pb = "proto::Add_Class")]
+pub struct Add_Class {
+    ///
+    pub student_key: PublicKey,
+    ///
+    pub class_name: String
 }
 
-/// Remove from queue.
-#[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
-#[exonum(pb = "proto::Remove")]
-pub struct Remove {
-    /// `PublicKey` of participant.
-    pub key: PublicKey,
-}
+// /// Buy a phone.
+// #[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
+// #[exonum(pb = "proto::Buy")]
+// pub struct Buy {
+//     /// `PublicKey` of participant.
+//     pub key: PublicKey,
+// }
+
+// /// Remove from queue.
+// #[derive(Serialize, Deserialize, Clone, Debug, ProtobufConvert)]
+// #[exonum(pb = "proto::Remove")]
+// pub struct Remove {
+//     /// `PublicKey` of participant.
+//     pub key: PublicKey,
+// }
 
 /// Transaction group.
 #[derive(Serialize, Deserialize, Clone, Debug, TransactionSet)]
-pub enum ParticipantTransactions {
+pub enum UserTransactions {
     /// Add tx.
-    Add(Add),
-    /// Buy tx.
-    Buy(Buy),
-    /// Remove tx.
-    Remove(Remove)
+    AddUser(Add_User),
+    ///
+    AddClass(Add_Class),
+    // /// Buy tx.
+    // Buy(Buy),
+    // /// Remove tx.
+    // Remove(Remove)
 }
 
-impl Add {
+impl Add_User {
     #[doc(hidden)]
     pub fn sign(
-        pk: &PublicKey,
         &key: &PublicKey,
-        timestamp: u64,
-        sk: &SecretKey,
-    ) -> Signed<RawTransaction> {
-        Message::sign_transaction(Self { key, timestamp }, SERVICE_ID, *pk, sk)
-    }
-}
-
-impl Buy {
-    #[doc(hidden)]
-    pub fn sign(
         pk: &PublicKey,
-        &key: &PublicKey,
         sk: &SecretKey,
     ) -> Signed<RawTransaction> {
         Message::sign_transaction(Self { key }, SERVICE_ID, *pk, sk)
     }
 }
 
-impl Remove {
+impl Add_Class {
     #[doc(hidden)]
     pub fn sign(
+        &student_key: &PublicKey,
+        class_name: String,
         pk: &PublicKey,
-        &key: &PublicKey,
         sk: &SecretKey,
     ) -> Signed<RawTransaction> {
-        Message::sign_transaction(Self { key }, SERVICE_ID, *pk, sk)
+        Message::sign_transaction(Self { student_key, class_name }, SERVICE_ID, *pk, sk)
     }
 }
 
-impl Transaction for Add {
+// impl Buy {
+//     #[doc(hidden)]
+//     pub fn sign(
+//         pk: &PublicKey,
+//         &key: &PublicKey,
+//         sk: &SecretKey,
+//     ) -> Signed<RawTransaction> {
+//         Message::sign_transaction(Self { key }, SERVICE_ID, *pk, sk)
+//     }
+// }
+
+// impl Remove {
+//     #[doc(hidden)]
+//     pub fn sign(
+//         pk: &PublicKey,
+//         &key: &PublicKey,
+//         sk: &SecretKey,
+//     ) -> Signed<RawTransaction> {
+//         Message::sign_transaction(Self { key }, SERVICE_ID, *pk, sk)
+//     }
+// }
+
+impl Transaction for Add_User {
     fn execute(&self, context: TransactionContext) -> ExecutionResult {
         let hash = context.tx_hash();
 
@@ -129,10 +150,8 @@ impl Transaction for Add {
 
         let key = &self.key;
 
-        if schema.participant(key).is_none() {
-            let timestamp = self.timestamp;
-
-            schema.add_participant(key, timestamp, false, false, &hash);
+        if schema.user(key).is_none() {
+            schema.add_user(key);
 
             Ok(())
         } else {
@@ -141,46 +160,66 @@ impl Transaction for Add {
     }
 }
 
-impl Transaction for Buy {
+impl Transaction for Add_Class {
     fn execute(&self, context: TransactionContext) -> ExecutionResult {
         let hash = context.tx_hash();
-        let mut schema = Schema::new(context.fork());
-        let key = &self.key;
 
-        if let Some(participant) = schema.participant(key) {
-            if participant.have_bought {
-                Err(Error::ParticipantAlreadyBought)?
-            }
+        let mut schema = Schema::new(context.fork());
+
+        let key = &self.student_key;
+
+        // TODO
+
+        if schema.user(key).is_none() {
+            schema.add_user(key);
+
+            Ok(())
+        } else {
+            Err(Error::ParticipantAlreadyExists)?
+        }
+    }
+}
+
+// impl Transaction for Buy {
+//     fn execute(&self, context: TransactionContext) -> ExecutionResult {
+//         let hash = context.tx_hash();
+//         let mut schema = Schema::new(context.fork());
+//         let key = &self.key;
+
+//         if let Some(participant) = schema.participant(key) {
+//             if participant.have_bought {
+//                 Err(Error::ParticipantAlreadyBought)?
+//             }
             
-            let first = schema.first_participant().unwrap();
-            if !first.key.eq(&participant.key) {
-                Err(Error::ParticipantIsNotFirst)?
-            }
+//             let first = schema.first_participant().unwrap();
+//             if !first.key.eq(&participant.key) {
+//                 Err(Error::ParticipantIsNotFirst)?
+//             }
 
-            schema.participant_have_bought(participant, &hash);
-            Ok(())
-        } else {
-            Err(Error::ParticipantNotFound)?
-        }
-    }
-}
+//             schema.participant_have_bought(participant, &hash);
+//             Ok(())
+//         } else {
+//             Err(Error::ParticipantNotFound)?
+//         }
+//     }
+// }
 
-impl Transaction for Remove {
-    fn execute(&self, context: TransactionContext) -> ExecutionResult {
-        let hash = context.tx_hash();
-        let mut schema = Schema::new(context.fork());
-        let key = &self.key;
+// impl Transaction for Remove {
+//     fn execute(&self, context: TransactionContext) -> ExecutionResult {
+//         let hash = context.tx_hash();
+//         let mut schema = Schema::new(context.fork());
+//         let key = &self.key;
 
-        if let Some(participant) = schema.participant(key) {
+//         if let Some(participant) = schema.participant(key) {
 
-            if participant.removed {
-                Err(Error::ParticipantAlreadyRemoved)?
-            }
+//             if participant.removed {
+//                 Err(Error::ParticipantAlreadyRemoved)?
+//             }
 
-            schema.remove_participant(participant, &hash);
-            Ok(())
-        } else {
-            Err(Error::ParticipantNotFound)?
-        }
-    }
-}
+//             schema.remove_participant(participant, &hash);
+//             Ok(())
+//         } else {
+//             Err(Error::ParticipantNotFound)?
+//         }
+//     }
+// }

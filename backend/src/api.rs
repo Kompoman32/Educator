@@ -22,7 +22,7 @@ pub struct UserQuery {
 }
 
 /// Describes the query parameters for the `get_cert` endpoint.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CertQuery {
     /// Public key of the queried user.
     pub pub_key: PublicKey,
@@ -141,16 +141,24 @@ impl PublicApi {
         Ok(answer)
     }
 
+    fn add(state: &ServiceApiState, query: UserQuery,) -> api::Result<bool> {
+        let snapshot = state.snapshot();
+        let mut schema = Schema::new(&snapshot);
+        schema.add_user(&query.pub_key);
+
+        Ok(true)
+    }
+
     fn get_cert(state: &ServiceApiState, query: CertQuery,) -> api::Result<bool> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
 
         let &pub_key = &query.pub_key;
-        let &course_name = &query.course_name;
+        let course_name = &query.course_name;
 
         // TODO LOGIC
 
-        Ok(answer)
+        Ok(true)
     }
 
     /// Wires the above endpoint to public scope of the given `ServiceApiBuilder`.
@@ -160,6 +168,7 @@ impl PublicApi {
             // v1/educator/user_exist?pub_key={id}
             .endpoint("v1/educator/user_exist", Self::user_exist)
             // v1/educator/user_exist?pub_key={id}&course_name={name}
-            .endpoint("v1/educator/get_certs", Self::get_cert);
+            .endpoint("v1/educator/get_certs", Self::get_cert)
+            .endpoint("v1/educator/add", Self::add);
     }
 }
