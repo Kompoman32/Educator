@@ -13,6 +13,12 @@ message User {
     string login = 2;
 }
 
+//
+message Add_User {
+    // 
+    exonum.PublicKey key = 1;
+}
+
 // 
 message Class {
     // 

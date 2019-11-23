@@ -22,7 +22,7 @@ pub struct UserQuery {
 }
 
 /// Describes the query parameters for the `get_cert` endpoint.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CertQuery {
     /// Public key of the queried user.
     pub pub_key: PublicKey,
@@ -146,11 +146,11 @@ impl PublicApi {
         let schema = Schema::new(&snapshot);
 
         let &pub_key = &query.pub_key;
-        let &course_name = &query.course_name;
+        let course_name = &query.course_name;
 
         // TODO LOGIC
 
-        Ok(answer)
+        Ok(true)
     }
 
     /// Wires the above endpoint to public scope of the given `ServiceApiBuilder`.

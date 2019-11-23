@@ -1,4 +1,4 @@
-//! Iphone queue database schema.
+//! Educator database schema.
 use crate::user::User;
 use exonum::crypto::{Hash, PublicKey};
 use exonum_merkledb::{IndexAccess, ObjectHash, ProofListIndex, ProofMapIndex};
