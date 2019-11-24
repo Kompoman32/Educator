@@ -7,15 +7,19 @@ use exonum::crypto::{Hash, PublicKey};
 pub struct User {
     /// key
     pub key: PublicKey,
+    /// name
+    pub name: String,
 }
 
 impl User {
     /// Creates new user
     pub fn new(
         &key: &PublicKey,
+        name: String,
     ) -> Self {
         Self {
-            key
+            key,
+            name,
         }
     }
 }

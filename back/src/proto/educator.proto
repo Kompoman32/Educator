@@ -8,6 +8,8 @@ import "helpers.proto";
 message User {
     // 
     exonum.PublicKey key = 1;
+    //
+    string name = 2;
 }
 
 // 
@@ -30,6 +32,6 @@ message Task {
 message Cert {
     //
     exonum.PublicKey student_key = 1;
-
+    //
     string course_name = 2;
 }

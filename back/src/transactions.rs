@@ -7,8 +7,8 @@ use exonum::{
 };
 
 use super::{proto, schema::Schema, SERVICE_ID};
-use crate::hardStorage::*;
-use crate::smartContract::can_get_cert;
+use crate::hard_storage::*;
+use crate::smart_contract::can_get_cert;
 
 /// Error codes emitted by pipes transactions during execution.
 #[derive(Debug, Fail)]
@@ -17,32 +17,56 @@ pub enum Error {
     /// Participant already exists.
     ///
     /// Can be emitted by `Add`.
-    #[fail(display = "Participant already exists")]
-    ParticipantAlreadyExists = 0,
+    #[fail(display = "Пользователь уже существует")]
+    UserAlreadyExist = 0,
+
+    /// 
+    ///
+    /// Can be emitted by `Add`.
+    #[fail(display = "Пользователь не существует")]
+    UserIsNotExist = 1,
+
+    /// 
+    ///
+    /// Can be emitted by `Add`.
+    #[fail(display = "Отсутсвуют права на добавление пользователя")]
+    NoAccessToAddUser = 2,
     
-    /// Participant already removed.
+    /// 
     ///
-    /// Can be emitted by `Remove`.
-    #[fail(display = "Participant already removed")]
-    ParticipantAlreadyRemoved = 1,
+    /// Can be emitted by `Add`.
+    #[fail(display = "Отсутсвуют права на добавление отметки посещения занятия")]
+    NoAccessToAddClass = 3,
+    
+    /// 
+    ///
+    /// Can be emitted by `Add`.
+    #[fail(display = "Отсутсвуют права на добавление отметки выполения задания")]
+    NoAccessToAddTask = 4,
+    
+    /// 
+    ///
+    /// Can be emitted by `Add`.
+    #[fail(display = "Отсутсвуют права на добавление сертификата")]
+    NoAccessToAddCert = 5,
+    
+    /// 
+    ///
+    /// Can be emitted by `Add`.
+    #[fail(display = "Запись о посещении занятия уже сущесвует")]
+    ClassRecordAlreadyExist = 6,
+    
+    /// 
+    ///
+    /// Can be emitted by `Add`.
+    #[fail(display = "Запись о выполнении задания уже сущесвует")]
+    TaskRecordAlreadyExist = 7,
 
-    /// Can't find participant by key.
+    /// 
     ///
-    /// Can be emitted by `Remove`.
-    #[fail(display = "Can't find participant by key")]
-    ParticipantNotFound = 2,
-
-    /// Participant already bought a phone.
-    ///
-    /// Can be emitted by `Buy`.
-    #[fail(display = "Participant already bought a phone")]
-    ParticipantAlreadyBought = 3,
-
-    /// Participant is not first.
-    ///
-    /// Can be emitted by `Buy`.
-    #[fail(display = "Participant is not first")]
-    ParticipantIsNotFirst = 4
+    /// Can be emitted by `Add`.
+    #[fail(display = "Выполнены не все условия для получения сертификата")]
+    CertConditionsIsNotSatisfied = 8,
 }
 
 impl From<Error> for ExecutionError {
@@ -59,7 +83,9 @@ impl From<Error> for ExecutionError {
 #[exonum(pb = "proto::User")]
 pub struct User {
     /// `PublicKey` of participant.
-    pub key: PublicKey
+    pub key: PublicKey,
+    /// name
+    pub name: String
 }
 
 ///
@@ -114,17 +140,18 @@ impl Transaction for User {
         let mut schema = Schema::new(context.fork());
 
         let key = &self.key;
+        let name = self.name.chars().collect();;
         let author = context.author();
 
         if !can_add_user(&author) {
-            return Err(Error::ParticipantAlreadyExists)?
+            return Err(Error::NoAccessToAddUser)?
         }
         if schema.user(key).is_none() {
-            schema.add_user(key);
+            schema.add_user(key, &name);
 
             Ok(())
         } else {
-            Err(Error::ParticipantAlreadyExists)?
+            Err(Error::UserAlreadyExist)?
         }
     }
 }
@@ -137,18 +164,18 @@ impl Transaction for Class {
         let class_name = self.class_name.chars().collect();
         let author = context.author();
 
-        if can_add_class(&author) {
-            return Err(Error::ParticipantAlreadyExists)?
+        if !can_add_class(&author) {
+            return Err(Error::NoAccessToAddClass)?
         }
 
         if schema.user(key).is_none() {
-            Err(Error::ParticipantAlreadyExists)?
+            Err(Error::UserIsNotExist)?
         } else {
             if schema.class(key, &class_name).is_none(){
-                Err(Error::ParticipantAlreadyExists)?
-            } else {
                 schema.add_class(key, &class_name);
                 Ok(())
+            } else {
+                Err(Error::ClassRecordAlreadyExist)?
             }
         }
     }
@@ -162,18 +189,18 @@ impl Transaction for Task {
         let task_name = self.task_name.chars().collect();
         let author = context.author();
 
-        if can_add_task(&author) {
-            return Err(Error::ParticipantAlreadyExists)?
+        if !can_add_task(&author) {
+            return Err(Error::NoAccessToAddTask)?
         }
 
         if schema.user(key).is_none() {
-            Err(Error::ParticipantAlreadyExists)?
+            Err(Error::UserIsNotExist)?
         } else {
             if schema.task(key, &task_name).is_none(){
-                Err(Error::ParticipantAlreadyExists)?
-            } else {
                 schema.add_task(key, &task_name);
                 Ok(())
+            } else {
+                Err(Error::TaskRecordAlreadyExist)?
             }
         }
     }
@@ -187,18 +214,20 @@ impl Transaction for Cert {
         let course_name = self.course_name.chars().collect();
         let author = context.author();
 
-        if can_add_cert(&author) {
-            return Err(Error::ParticipantAlreadyExists)?
+        if !can_add_cert(&author) {
+            return Err(Error::NoAccessToAddCert)?
         }
 
         if schema.user(key).is_none() {
-            Err(Error::ParticipantAlreadyExists)?
+            Err(Error::UserIsNotExist)?
         } else {
             if can_get_cert(key, &course_name) {
-                schema.add_cert(key, &course_name);
+                if schema.cert(key, &course_name).is_none() {
+                    schema.add_cert(key, &course_name);
+                }
                 Ok(())
             } else {
-                Err(Error::ParticipantAlreadyExists)?
+                Err(Error::CertConditionsIsNotSatisfied)?
             }
         }
     }
@@ -209,11 +238,12 @@ impl Transaction for Cert {
 impl User {
     #[doc(hidden)]
     pub fn sign(
-        &key: &PublicKey,
         pk: &PublicKey,
+        &key: &PublicKey,
+        name: String,
         sk: &SecretKey,
     ) -> Signed<RawTransaction> {
-        Message::sign_transaction(Self { key }, SERVICE_ID, *pk, sk)
+        Message::sign_transaction(Self { key, name }, SERVICE_ID, *pk, sk)
     }
 }
 

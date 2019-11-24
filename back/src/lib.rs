@@ -28,9 +28,9 @@ pub mod schema;
 /// Transactions
 pub mod transactions;
 /// HardCode DB
-pub mod hardStorage;
+pub mod hard_storage;
 /// SmartContract Db
-pub mod smartContract;
+pub mod smart_contract;
 
 use exonum_merkledb::Snapshot;
 
