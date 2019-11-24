@@ -157,4 +157,70 @@ where
         };
         self.certes().put(&self.convert_to_cert_key(student_key, course_name), created_cert);
     }
+
+    #[doc(hidden)]
+    pub fn can_get_cert(&self, &student_key: &PublicKey, course_name: &String) -> bool {
+
+        if course_name == &String::from("course_1") {
+            return self.can_get_cert_in_course_1(&student_key);
+        }
+
+        if course_name == &String::from("course_2") {
+            return self.can_get_cert_in_course_2(&student_key);
+        }
+
+        false
+    }
+
+    #[doc(hidden)]
+    fn can_get_cert_in_course_1(&self, &student_key: &PublicKey) -> bool {
+        let available_cert = self.cert(&student_key, &String::from("course_1"));
+
+        if !available_cert.is_none() {
+            return true;
+        }
+
+        let mut classes = self.classes();
+
+        let class_names = vec![String::from("class_1_1"), String::from("class_1_2")];
+        let task_names = vec![String::from("task_1_1"), String::from("task_1_2")];
+
+        let mut answer = true;
+
+        for c_n in class_names.iter() {
+            answer = answer && self.class(&student_key, &c_n).is_some();
+        }
+
+        for t_n in task_names.iter() {
+            answer = answer && self.class(&student_key, &t_n).is_some();
+        }
+
+        answer
+    }
+
+    #[doc(hidden)]
+    fn can_get_cert_in_course_2(&self, &student_key: &PublicKey) -> bool {
+        let available_cert = self.cert(&student_key, &String::from("course_1"));
+
+        if !available_cert.is_none() {
+            return true;
+        }
+
+        let mut classes = self.classes();
+
+        let class_names = vec![String::from("class_2_1"), String::from("class_2_3")];
+        let task_names = vec![String::from("task_2_1"), String::from("task_2_2")];
+
+        let mut answer = true;
+
+        for c_n in class_names.iter() {
+            answer = answer && self.class(&student_key, &c_n).is_some();
+        }
+
+        for t_n in task_names.iter() {
+            answer = answer && self.class(&student_key, &t_n).is_some();
+        }
+
+        answer
+    }
 }
