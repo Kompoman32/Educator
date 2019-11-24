@@ -29,7 +29,7 @@ pub struct CertQuery {
 
 /// Describes the query parameters for the `get_cert` endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct CourseQuery {
+pub struct EmptyQuery {
 
 }
 
@@ -49,13 +49,21 @@ pub struct TaskQuery {
 
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+struct ClassObj {
+    pub student_key: String,
+
+    pub course_name: String,
+}
+
+
 /// Public service API description.
 #[derive(Debug, Clone, Copy)]
 pub struct PublicApi;
 
 impl PublicApi {
     ///
-    pub fn user_exist(state: &ServiceApiState, query: UserQuery,) -> api::Result<bool> {
+    pub fn user_exist(state: &ServiceApiState, query: UserQuery) -> api::Result<bool> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
         let user = schema.user(&query.pub_key);
@@ -69,7 +77,7 @@ impl PublicApi {
     }
 
     ///
-    pub fn get_cert(state: &ServiceApiState, query: CertQuery,) -> api::Result<bool> {
+    pub fn get_cert(state: &ServiceApiState, query: CertQuery) -> api::Result<bool> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
 
@@ -82,7 +90,7 @@ impl PublicApi {
     }
 
     ///
-    pub fn get_courses(state: &ServiceApiState, query: CourseQuery,) -> api::Result<Vec<&'static str>> {
+    pub fn get_courses(state: &ServiceApiState, query: EmptyQuery,) -> api::Result<Vec<&'static str>> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
 
@@ -90,7 +98,7 @@ impl PublicApi {
     }
 
     ///
-    pub fn get_classes(state: &ServiceApiState, query: ClassQuery,) -> api::Result<Vec<&'static str>> {
+    pub fn get_classes(state: &ServiceApiState, query: ClassQuery) -> api::Result<Vec<&'static str>> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
 
@@ -117,7 +125,7 @@ impl PublicApi {
     }
 
     ///
-    pub fn get_tasks(state: &ServiceApiState, query: TaskQuery,) -> api::Result<Vec<&'static str>> {
+    pub fn get_tasks(state: &ServiceApiState, query: TaskQuery) -> api::Result<Vec<&'static str>> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
 
@@ -143,6 +151,41 @@ impl PublicApi {
         }
     }
 
+    ///
+    pub fn get_classes_transactions(state: &ServiceApiState, query: EmptyQuery) -> api::Result<Vec<&'static str>> {
+        let snapshot = state.snapshot();
+        let schema = Schema::new(&snapshot);
+
+        let name = &query.name;
+
+        let mut course_1 = vec!["class_1", "class_2"];
+        let mut course_2 = vec!["class_1", "class_2", "class_3"];
+
+        if name.is_none() {
+            course_1.extend_from_slice(&course_2);
+            Ok(course_1)
+        } else {
+            let res = name.as_ref().unwrap();
+
+            if res == &String::from("course_1") {
+                return Ok(course_1)
+            }
+
+            if res == &String::from("course_2") {
+                return Ok(course_2)
+            }
+            Err(Error::NotFound(String::from("Course Name")))?
+        }
+    }
+
+    ///
+    pub fn get_tasks_transactions(state: &ServiceApiState, query: EmptyQuery) -> api::Result<Vec<ClassObj>> {
+        let snapshot = state.snapshot();
+        let schema = Schema::new(&snapshot);
+
+        schema.tasks()()
+    }
+
     /// Wires the above endpoint to public scope of the given `ServiceApiBuilder`.
     pub fn wire(builder: &mut ServiceApiBuilder) {
         builder
@@ -157,6 +200,10 @@ impl PublicApi {
             .endpoint("v1/educator/get_classes", Self::get_classes)
             // v1/educator/get_tasks?name={name}
             .endpoint("v1/educator/get_tasks", Self::get_tasks)
+            // v1/educator/get_classes?name={name}
+            .endpoint("v1/educator/get_classes_transactions", Self::get_classes_transactions)
+            // v1/educator/get_tasks?name={name}
+            .endpoint("v1/educator/get_tasks_transactions", Self::get_tasks_transactions)
             ;
     }
 }

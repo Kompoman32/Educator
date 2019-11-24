@@ -104,13 +104,13 @@ where
     }
 
     /// Returns `ProofMapIndex` with users.
-    pub fn taskes(&self) -> ProofMapIndex<T, String, Task> {
+    pub fn tasks(&self) -> ProofMapIndex<T, String, Task> {
         ProofMapIndex::new(TASK_TABLE, self.view.clone())
     }
 
     /// Returns user for the given public key.
     pub fn task(&self, key: &PublicKey, task_name: &String) -> Option<Task> {
-        self.taskes().get(&self.convert_to_task_key(key, task_name))
+        self.tasks().get(&self.convert_to_task_key(key, task_name))
     }
 
     /// Create new user and append first record to its history.
@@ -125,7 +125,7 @@ where
                 task_name.clone()
             )
         };
-        self.taskes().put(&self.convert_to_task_key(student_key, task_name), created_task);
+        self.tasks().put(&self.convert_to_task_key(student_key, task_name), created_task);
     }
 
     ///
