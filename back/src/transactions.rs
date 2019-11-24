@@ -116,10 +116,9 @@ impl Transaction for User {
         let key = &self.key;
         let author = context.author();
 
-        if can_add_user(&author) {
+        if !can_add_user(&author) {
             return Err(Error::ParticipantAlreadyExists)?
         }
-
         if schema.user(key).is_none() {
             schema.add_user(key);
 

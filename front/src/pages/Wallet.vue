@@ -1,7 +1,22 @@
 <template>
   <div>
     <navbar/>
-
+    <form @submit.prevent="addClass">
+      <div class="form-group">
+        <label class="control-label">Name:</label>
+        <input v-model="nameStudent" type="text" class="form-control" placeholder="Enter Student" maxlength="260" required>
+        <input v-model="nameClass" type="text" class="form-control" placeholder="Enter Class" maxlength="260" required>
+        <button type="submit" class="btn btn-lg btn-block btn-primary">addClass</button>
+      </div>
+    </form>
+    <form @submit.prevent="addTask">
+      <div class="form-group">
+        <label class="control-label">Name:</label>
+        <input v-model="nameStudentTask" type="text" class="form-control" placeholder="Enter Student" maxlength="260" required>
+        <input v-model="nameTask" type="text" class="form-control" placeholder="Enter Task" maxlength="260" required>
+        <button type="submit" class="btn btn-lg btn-block btn-primary">addTask</button>
+      </div>
+    </form>
     <div class="container">
       <div class="row">
         <div class="col-md-6">
@@ -30,7 +45,6 @@
               </li>
             </ul>
           </div>
-
           <div class="card mt-5">
             <div class="card-header">Transactions</div>
             <ul class="list-group list-group-flush">
@@ -135,6 +149,7 @@
         ]
       }
     },
+
     computed: Object.assign({
       reverseTransactions() {
         return this.transactions.slice().reverse()
@@ -163,6 +178,40 @@
           this.$notify('error', error.toString())
         }
       },
+
+            async addClass() {
+        if (this.nameStudent=='' && this.nameClass=='') {
+          return this.$notify('error', 'Введите ид класса и студента')
+        }
+        try {
+            await this.$blockchain.addClass(this.keyPair, this.nameStudent, this.nameClass)
+            this.name = ''
+            this.isSpinnerVisible = false
+            this.isModalVisible = true
+
+        } catch (error) {
+          this.isSpinnerVisible = false
+          this.$notify('error', error.toString())
+        }
+
+            },
+
+        async addTask() {
+        if (this.nameStudentTask=='' && this.nameTask=='') {
+          return this.$notify('error', 'Введите ид класса и студента')
+        }
+        try {
+            await this.$blockchain.addTask(this.keyPair, this.nameStudentTask, this.nameTask)
+            this.name = ''
+            this.isSpinnerVisible = false
+            this.isModalVisible = true
+
+        } catch (error) {
+          this.isSpinnerVisible = false
+          this.$notify('error', error.toString())
+        }
+
+            },
 
       async addFunds() {
         this.isSpinnerVisible = true

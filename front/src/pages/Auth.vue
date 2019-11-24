@@ -89,10 +89,11 @@
         this.keyPair = this.$blockchain.generateKeyPair()
 
         try {
-          await this.$blockchain.createWallet(this.keyPair, this.name)
-          this.name = ''
-          this.isSpinnerVisible = false
-          this.isModalVisible = true
+            await this.$blockchain.createWallet(this.keyPair, this.name)
+            this.name = ''
+            this.isSpinnerVisible = false
+            this.isModalVisible = true
+
         } catch (error) {
           this.isSpinnerVisible = false
           this.$notify('error', error.toString())

@@ -52,6 +52,14 @@
                   </div>
                 </div>
               </li>
+              <li class="list-group-item">
+                <div class="row">
+                  <div class="col-sm-3"><strong>Сообщение:</strong></div>
+                  <div class="col-sm-9">
+                    <code>{{ status.description }}</code>
+                  </div>
+                </div>
+              </li>
               <li v-if="content.message" class="list-group-item">
                 <div class="row">
                   <div class="col-sm-3"><strong>Serialized:</strong></div>

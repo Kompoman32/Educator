@@ -4,13 +4,13 @@ import * as proto from '../../proto/stubs.js'
 
 const TRANSACTION_URL = '/api/explorer/v1/transactions'
 const PER_PAGE = 10
-const SERVICE_ID = 128
-const TX_TRANSFER_ID = 0
-const TX_ISSUE_ID = 1
-const TX_WALLET_ID = 2
+const SERVICE_ID = 10
+const TX_Task_ID = 2
+const TX_Class_ID = 1
+const TX_WALLET_ID = 0
 const TABLE_INDEX = 0
 
-function CreateTransaction(publicKey) {
+function User(publicKey) {
   return Exonum.newTransaction({
     author: publicKey,
     service_id: SERVICE_ID,
@@ -19,9 +19,31 @@ function CreateTransaction(publicKey) {
   })
 }
 
+function Class(publicKey){
+  return Exonum.newTransaction({
+    author:publicKey,
+    service_id: SERVICE_ID,
+    message_id: TX_Class_ID,
+    schema: proto.educator.Class
+  })
+}
+
+function Task(publicKey){
+  return Exonum.newTransaction({
+    author:publicKey,
+    service_id: SERVICE_ID,
+    message_id: TX_Task_ID,
+    schema: proto.educator.Task
+  })
+}
+
+function sengUser (publicKey) {
+  return axios.get(`/api/services/educator/v1/educator/user_exist?pub_key=${publicKey}`).then(response => response.data)
+}
+
 function getTransaction(transaction, publicKey) {
   if (transaction.name) {
-    return new CreateTransaction(publicKey)
+    return new User(publicKey)
   }
 
   if (transaction.to) {
@@ -44,11 +66,47 @@ module.exports = {
 
       createWallet(keyPair, name) {
         // Describe transaction
-        const transaction = new CreateTransaction(keyPair.publicKey)
+        const transaction = new User(keyPair.publicKey)
 
         // Transaction data
         const data = {
-          name: name
+          key: { data: Exonum.hexadecimalToUint8Array(keyPair.publicKey) } 
+        }
+        return sengUser(keyPair.publicKey).then(x => 
+          {
+            if (!x)
+            return transaction.send(TRANSACTION_URL, data, keyPair.secretKey)
+            else
+            alert('Пользователь уже заведён');
+            return null;
+
+          })
+      },
+
+      //  транзакция добавления классов
+      addClass(keyPair, student_key, class_name) {
+        // Describe transaction
+        const transaction = new Class(keyPair.publicKey)
+
+        // Transaction data
+        const data = {
+          student_key: { data: Exonum.hexadecimalToUint8Array(student_key) },
+          class_name:  class_name
+        }
+
+        // Send transaction into blockchain
+        return transaction.send(TRANSACTION_URL, data, keyPair.secretKey)
+      },
+
+      //  транзакция добавления таксков
+      addTask(keyPair, student_key, task_name) {
+        // Describe transaction
+        const transaction = new Task(keyPair.publicKey)
+
+        // Transaction data
+        const data = {
+          student_key: { data: Exonum.hexadecimalToUint8Array(student_key) },
+          task_name: task_name
         }
 
         // Send transaction into blockchain
@@ -62,7 +120,7 @@ module.exports = {
             return validator.consensus_key
           })
 
-          return axios.get(`/api/services/cryptocurrency/v1/wallets/info?pub_key=${publicKey}`)
+          return axios.get(`/api/services/educator/v1/educator/user_exist?pub_key=${publicKey}`)
             .then(response => response.data)
             .then(data => {
               return Exonum.verifyBlock(data.block_proof, validators).then(() => {
