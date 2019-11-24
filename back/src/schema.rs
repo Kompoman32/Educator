@@ -47,10 +47,12 @@ where
     pub fn add_user(
         &mut self,
         key: &PublicKey,
+        name: &String,
     ) {
         let created_user = {
             User::new(
                 key,
+                name.clone()
             )
         };
         self.users().put(key, created_user);

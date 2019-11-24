@@ -83,7 +83,9 @@ impl From<Error> for ExecutionError {
 #[exonum(pb = "proto::User")]
 pub struct User {
     /// `PublicKey` of participant.
-    pub key: PublicKey
+    pub key: PublicKey,
+    /// name
+    pub name: String
 }
 
 ///
@@ -138,6 +140,7 @@ impl Transaction for User {
         let mut schema = Schema::new(context.fork());
 
         let key = &self.key;
+        let name = self.name.chars().collect();;
         let author = context.author();
 
         if !can_add_user(&author) {
@@ -145,7 +148,7 @@ impl Transaction for User {
         }
 
         if schema.user(key).is_none() {
-            schema.add_user(key);
+            schema.add_user(key, &name);
 
             Ok(())
         } else {
@@ -238,9 +241,10 @@ impl User {
     pub fn sign(
         pk: &PublicKey,
         &key: &PublicKey,
+        name: String,
         sk: &SecretKey,
     ) -> Signed<RawTransaction> {
-        Message::sign_transaction(Self { key }, SERVICE_ID, *pk, sk)
+        Message::sign_transaction(Self { key, name }, SERVICE_ID, *pk, sk)
     }
 }
 
