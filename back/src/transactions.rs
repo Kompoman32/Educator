@@ -8,7 +8,6 @@ use exonum::{
 
 use super::{proto, schema::Schema, SERVICE_ID};
 use crate::hard_storage::*;
-use crate::smart_contract::can_get_cert;
 
 /// Error codes emitted by pipes transactions during execution.
 #[derive(Debug, Fail)]
@@ -221,7 +220,7 @@ impl Transaction for Cert {
         if schema.user(key).is_none() {
             Err(Error::UserIsNotExist)?
         } else {
-            if can_get_cert(key, &course_name) {
+            if schema.can_get_cert(key, &course_name) {
                 if schema.cert(key, &course_name).is_none() {
                     schema.add_cert(key, &course_name);
                 }
