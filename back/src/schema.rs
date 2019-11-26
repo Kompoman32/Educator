@@ -60,7 +60,7 @@ where
 
     /// Returns the state hash of service.
     pub fn state_hash(&self) -> Vec<Hash> {
-        vec![self.users().object_hash(), self.classes().object_hash()]
+        vec![self.users().object_hash(), self.classes().object_hash(), self.tasks().object_hash(), self.certes().object_hash()]
     }
 
 

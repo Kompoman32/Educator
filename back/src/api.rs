@@ -43,10 +43,24 @@ pub struct ClassQuery {
 
 /// Describes the query parameters for the `get_cert` endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ClassTxQuery {
+    /// 
+    pub key: PublicKey,
+}
+
+/// Describes the query parameters for the `get_cert` endpoint.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TaskQuery {
     /// 
     pub name: Option<String>,
 
+}
+
+/// Describes the query parameters for the `get_cert` endpoint.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TaskTxQuery {
+    /// 
+    pub key: PublicKey,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -84,9 +98,7 @@ impl PublicApi {
         let &pub_key = &query.pub_key;
         let course_name = &query.course_name;
 
-        // TODO LOGIC
-
-        Ok(true)
+        Ok(schema.cert(&pub_key, course_name).is_none())
     }
 
     ///
@@ -125,6 +137,46 @@ impl PublicApi {
     }
 
     ///
+    pub fn get_classes_transactions(state: &ServiceApiState, query: ClassTxQuery) -> api::Result<Vec<(String, String)>> {
+        let snapshot = state.snapshot();
+        let schema = Schema::new(&snapshot);
+
+        let key = &query.key;
+
+        let classes = schema.classes();
+
+        let mut results = Vec::new();
+
+        for c in classes.iter() {
+            if c.1.student_key.to_string() == key.to_string() {
+                results.push((c.1.student_key.to_string(), c.1.class_name));
+            }
+        }
+
+        Ok(results)
+    }
+
+    ///
+    pub fn get_tasks_transactions(state: &ServiceApiState, query: TaskTxQuery) -> api::Result<Vec<(String, String)>> {
+        let snapshot = state.snapshot();
+        let schema = Schema::new(&snapshot);
+
+        let key = &query.key;
+
+        let tasks = schema.tasks();
+
+        let mut results = Vec::new();
+
+        for t in tasks.iter() {
+            if t.1.student_key.to_string() == key.to_string() {
+                results.push((t.1.student_key.to_string(), t.1.task_name));
+            }
+        }
+
+        Ok(results)
+    }
+
+    ///
     pub fn get_tasks(state: &ServiceApiState, query: TaskQuery) -> api::Result<Vec<&'static str>> {
         let snapshot = state.snapshot();
         let schema = Schema::new(&snapshot);
@@ -151,59 +203,24 @@ impl PublicApi {
         }
     }
 
-    // ///
-    // pub fn get_classes_transactions(state: &ServiceApiState, query: EmptyQuery) -> api::Result<Vec<&'static str>> {
-    //     let snapshot = state.snapshot();
-    //     let schema = Schema::new(&snapshot);
-
-    //     let name = &query.name;
-
-    //     let mut course_1 = vec!["class_1", "class_2"];
-    //     let mut course_2 = vec!["class_1", "class_2", "class_3"];
-
-    //     if name.is_none() {
-    //         course_1.extend_from_slice(&course_2);
-    //         Ok(course_1)
-    //     } else {
-    //         let res = name.as_ref().unwrap();
-
-    //         if res == &String::from("course_1") {
-    //             return Ok(course_1)
-    //         }
-
-    //         if res == &String::from("course_2") {
-    //             return Ok(course_2)
-    //         }
-    //         Err(Error::NotFound(String::from("Course Name")))?
-    //     }
-    // }
-
-    // ///
-    // pub fn get_tasks_transactions(state: &ServiceApiState, query: EmptyQuery) -> api::Result<Vec<ClassObj>> {
-    //     let snapshot = state.snapshot();
-    //     let schema = Schema::new(&snapshot);
-
-    //     schema.tasks()()
-    // }
-
     /// Wires the above endpoint to public scope of the given `ServiceApiBuilder`.
     pub fn wire(builder: &mut ServiceApiBuilder) {
         builder
             .public_scope()
             // v1/educator/user_exist?pub_key={id}
             .endpoint("v1/educator/user_exist", Self::user_exist)
-            // v1/educator/get_cert?pub_key={id}&course_name={name}
-            .endpoint("v1/educator/get_courses", Self::get_courses)
             // v1/educator/get_courses?name={name}
+            .endpoint("v1/educator/get_courses", Self::get_courses)
+            // v1/educator/get_cert?pub_key={id}&course_name={name}
             .endpoint("v1/educator/get_certs", Self::get_cert)
             // v1/educator/get_classes?name={name}
             .endpoint("v1/educator/get_classes", Self::get_classes)
             // v1/educator/get_tasks?name={name}
             .endpoint("v1/educator/get_tasks", Self::get_tasks)
-            // // v1/educator/get_classes?name={name}
-            // .endpoint("v1/educator/get_classes_transactions", Self::get_classes_transactions)
-            // // v1/educator/get_tasks?name={name}
-            // .endpoint("v1/educator/get_tasks_transactions", Self::get_tasks_transactions)
+            // v1/educator/get_classes?key={id}
+            .endpoint("v1/educator/get_classes_transactions", Self::get_classes_transactions)
+            // v1/educator/get_tasks?key={id}
+            .endpoint("v1/educator/get_tasks_transactions", Self::get_tasks_transactions)
             ;
     }
 }
